@@ -1,0 +1,9 @@
+﻿  injector.cpp
+C:\Users\Hp\source\repos\x\x\injector.cpp(21,85): error C2664: 'HMODULE GetModuleHandleW(LPCWSTR)': cannot convert argument 1 from 'const char [13]' to 'LPCWSTR'
+      C:\Users\Hp\source\repos\x\x\injector.cpp(21,101):
+      Types pointed to are unrelated; conversion requires reinterpret_cast, C-style cast or parenthesized function-style cast
+      C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\libloaderapi.h(244,1):
+      see declaration of 'GetModuleHandleW'
+      C:\Users\Hp\source\repos\x\x\injector.cpp(21,85):
+      while trying to match the argument list '(const char [13])'
+  
