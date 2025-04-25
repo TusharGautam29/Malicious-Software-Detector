@@ -1,0 +1,8 @@
+# Visual Studio artifacts
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.log
