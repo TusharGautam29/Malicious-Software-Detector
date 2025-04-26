@@ -1,4 +1,5 @@
 ﻿  dll.cpp
+C:\Users\Hp\source\repos\x\CaptureMonitorDLL\dll.cpp(36,57): warning C4267: 'argument': conversion from 'size_t' to 'DWORD', possible loss of data
   CaptureMonitorDLL.vcxproj -> C:\Users\Hp\source\repos\x\x64\Debug\CaptureMonitorDLL.dll
   'pwsh.exe' is not recognized as an internal or external command,
   operable program or batch file.

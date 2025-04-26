@@ -3,7 +3,7 @@
 #include <string>
 #include <thread>
 
-#define PIPE_NAME L"\\\\.\\pipe\\WindowCapturePipe"
+#define PIPE_NAME L"\\\\.\\pipe\\CaptureMonitorPipe"
 
 void PipeServer() {
     HANDLE hPipe = CreateNamedPipe(
