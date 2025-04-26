@@ -1,41 +1,30 @@
 #include <windows.h>
 #include <iostream>
-#include <string>
 
-#define PIPE_NAME L"\\\\.\\pipe\\WindowCapturePipe"
+DWORD WINAPI WorkerThread(LPVOID lpParam);
 
-DWORD WINAPI MonitorWindows(LPVOID) {
-    HWND hwnd;
-    DWORD lastState = 0;
-
-    while (true) {
-        hwnd = FindWindowW(NULL, L"testemp");
-        if (hwnd) {
-            DWORD affinity = 0;
-            if (GetWindowDisplayAffinity(hwnd, &affinity) && affinity == WDA_EXCLUDEFROMCAPTURE) {
-                if (lastState != affinity) {
-                    // send pipe message only once per change
-                    HANDLE hPipe = CreateFile(PIPE_NAME, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-                    if (hPipe != INVALID_HANDLE_VALUE) {
-                        const wchar_t* msg = L"Protected window detected!";
-                        DWORD bw;
-                        WriteFile(hPipe, msg, (DWORD)(wcslen(msg) + 1) * sizeof(wchar_t), &bw, NULL);
-                        CloseHandle(hPipe);
-                    }
-                    lastState = affinity;
-                }
-            }
-            else lastState = 0;
-        }
-        Sleep(1000);
-    }
-    return 0;
+void LogToDebugger(const std::wstring& msg) {
+    OutputDebugStringW(msg.c_str());
 }
 
-
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved) {
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-        CreateThread(NULL, 0, MonitorWindows, NULL, 0, NULL);
+        DisableThreadLibraryCalls(hModule); // Speeds up attach/detach handling
+        CreateThread(nullptr, 0, WorkerThread, nullptr, 0, nullptr);
     }
     return TRUE;
+}
+
+DWORD WINAPI WorkerThread(LPVOID lpParam) {
+    MessageBoxW(NULL, L"Injected DLL is running inside WorkerThread!", L"Info", MB_OK);
+
+    // Later, here we will initialize named pipe server
+
+    for (int i = 0; i < 10; i++) {
+        LogToDebugger(L"[DLL THREAD] Still alive...");
+        Sleep(1000);
+    }
+
+    LogToDebugger(L"[DLL THREAD] Worker exiting...");
+    return 0;
 }
