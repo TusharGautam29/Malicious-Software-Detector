@@ -82,6 +82,7 @@ int main() {
     }
 
     // Inject the DLL into the target process
+    std::wcout << L"Injecting DLL into process with PID: " << pid << std::endl;
     if (InjectDLL(pid, dllPath)) {
         std::wcout << L"DLL injected successfully!" << std::endl;
     }
