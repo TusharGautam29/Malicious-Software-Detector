@@ -18,6 +18,10 @@ HHOOK g_mouseHook = NULL;
 HWND g_mainAppWindow = NULL;
 WNDPROC g_originalWndProc = NULL;
 
+// Add a monitoring thread handle
+HANDLE g_monitoringThread = NULL;
+std::atomic<bool> g_stopMonitoring(false);
+
 void LogToDebugger(const std::wstring& msg) {
     OutputDebugStringW(msg.c_str());
 }
@@ -253,7 +257,24 @@ DWORD WINAPI WarningMessageThread(LPVOID lpParam) {
 
     return 0;
 }
+// New function to send notifications to client if it's connected
+void SendDetectionNotificationToPipe(const std::wstring& message) {
+    // Create a named pipe to communicate with any monitoring client that might be running
+    HANDLE hPipe = CreateFileW(
+        PIPE_NAME,
+        GENERIC_WRITE,
+        0, NULL, OPEN_EXISTING, 0, NULL);
 
+    if (hPipe != INVALID_HANDLE_VALUE) {
+        // Client is running, send notification
+        DWORD bytesWritten;
+        WriteFile(hPipe, message.c_str(),
+            (DWORD)(message.length() + 1) * sizeof(wchar_t),
+            &bytesWritten, NULL);
+        CloseHandle(hPipe);
+    }
+    // If pipe can't be opened, client isn't running - that's fine, we lock independently
+}
 // Lock the application to prevent user interaction
 bool LockApplication(HWND mainWindow) {
     if (g_appLocked) return true; // Already locked
@@ -297,8 +318,13 @@ bool LockApplication(HWND mainWindow) {
     g_appLocked = true;
     LogToDebugger(L"Application locked successfully\n");
 
+    // Optional: Send notification to pipe client if it's connected
+    SendDetectionNotificationToPipe(L"Application locked due to suspicious activity");
+
     return true;
 }
+
+
 
 // Unlock the application (only used for emergency override)
 void UnlockApplication() {
@@ -491,7 +517,30 @@ std::wstring CheckAllWindowsOfProcess() {
     return results.str();
 }
 
-DWORD WINAPI WorkerThread(LPVOID lpParam) {
+// New function for periodic monitoring
+DWORD WINAPI MonitoringThread(LPVOID lpParam) {
+    const int CHECK_INTERVAL_MS = 5000; // Check every 5 seconds
+
+    LogToDebugger(L"Starting automatic monitoring thread...\n");
+
+    while (!g_stopMonitoring) {
+        // Don't run checks if already locked
+        if (!g_appLocked) {
+            LogToDebugger(L"Running automatic cheat detection check...\n");
+            CheckAllWindowsOfProcess();
+            // Note: The CheckAllWindowsOfProcess function will lock the app if cheating is detected
+        }
+
+        // Wait for next check interval
+        Sleep(CHECK_INTERVAL_MS);
+    }
+
+    LogToDebugger(L"Monitoring thread terminated.\n");
+    return 0;
+}
+
+// Original pipe server thread - keep this for backward compatibility with the client
+DWORD WINAPI PipeServerThread(LPVOID lpParam) {
     HANDLE hPipe = CreateNamedPipeW(
         PIPE_NAME,
         PIPE_ACCESS_DUPLEX,
@@ -550,18 +599,38 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
     }
 
     CloseHandle(hPipe);
+
+    // Create another pipe server instance for future connections
+    CreateThread(NULL, 0, PipeServerThread, NULL, 0, NULL);
     return 0;
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(hModule);
-        CreateThread(NULL, 0, WorkerThread, NULL, 0, NULL);
+
+        // Start the monitoring thread for automatic detection
+        g_monitoringThread = CreateThread(NULL, 0, MonitoringThread, NULL, 0, NULL);
+
+        // Also start the pipe server thread for backward compatibility
+        CreateThread(NULL, 0, PipeServerThread, NULL, 0, NULL);
+
+        LogToDebugger(L"Anti-cheating DLL initialized with automatic monitoring\n");
     }
     else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
-        // Clean up resources if needed
+        // Clean up resources
+        g_stopMonitoring = true;
+
+        if (g_monitoringThread) {
+            // Wait for monitoring thread to exit
+            WaitForSingleObject(g_monitoringThread, 1000);
+            CloseHandle(g_monitoringThread);
+        }
+
         if (g_keyboardHook) UnhookWindowsHookEx(g_keyboardHook);
         if (g_mouseHook) UnhookWindowsHookEx(g_mouseHook);
+
+        LogToDebugger(L"Anti-cheating DLL detached\n");
     }
     return TRUE;
 }
