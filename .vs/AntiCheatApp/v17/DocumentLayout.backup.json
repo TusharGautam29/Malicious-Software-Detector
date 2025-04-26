@@ -9,10 +9,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{5440BEE4-3263-409E-8949-D237B6B3D502}|x\\x.vcxproj|C:\\Users\\Hp\\source\\repos\\x\\x\\injector.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{5440BEE4-3263-409E-8949-D237B6B3D502}|x\\x.vcxproj|solutionrelative:x\\injector.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A14A2562-111E-4EBD-9386-464B297B3A4F}|PipeServer\\PipeServer.vcxproj|C:\\Users\\Hp\\source\\repos\\x\\PipeServer\\pipe.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A14A2562-111E-4EBD-9386-464B297B3A4F}|PipeServer\\PipeServer.vcxproj|solutionrelative:PipeServer\\pipe.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 251,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Bookmark",
@@ -34,26 +30,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "pipe.cpp",
-              "DocumentMoniker": "C:\\Users\\Hp\\source\\repos\\x\\PipeServer\\pipe.cpp",
-              "RelativeDocumentMoniker": "PipeServer\\pipe.cpp",
-              "ToolTip": "C:\\Users\\Hp\\source\\repos\\x\\PipeServer\\pipe.cpp",
-              "RelativeToolTip": "PipeServer\\pipe.cpp",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-04-25T19:37:59.354Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 0,
               "Title": "dll.cpp",
               "DocumentMoniker": "C:\\Users\\Hp\\source\\repos\\x\\CaptureMonitorDLL\\dll.cpp",
               "RelativeDocumentMoniker": "CaptureMonitorDLL\\dll.cpp",
               "ToolTip": "C:\\Users\\Hp\\source\\repos\\x\\CaptureMonitorDLL\\dll.cpp",
               "RelativeToolTip": "CaptureMonitorDLL\\dll.cpp",
-              "ViewState": "AgIAAIwAAAAAAAAAAAAiwLUAAAAbAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAuAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-04-25T19:37:48.268Z",
               "EditorCaption": ""
