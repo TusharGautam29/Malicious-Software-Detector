@@ -18,6 +18,8 @@ HHOOK g_mouseHook = NULL;
 HWND g_mainAppWindow = NULL;
 WNDPROC g_originalWndProc = NULL;
 
+const int CHEATING_THRESHOLD = 7; // Adjust this threshold based on testing
+
 // Add a monitoring thread handle
 HANDLE g_monitoringThread = NULL;
 std::atomic<bool> g_stopMonitoring(false);
@@ -28,6 +30,7 @@ void LogToDebugger(const std::wstring& msg) {
 
 // Function prototypes
 bool IsWindowExcludedFromCapture(HWND hwnd);
+bool IsWindowTopMost(HWND hwnd);
 bool IsHiddenFromTaskbar(HWND hwnd);
 bool IsHiddenFromAltTab(HWND hwnd);
 bool HasTransparentRegions(HWND hwnd);
@@ -55,17 +58,30 @@ bool IsWindowExcludedFromCapture(HWND hwnd) {
     return (affinity == WDA_EXCLUDEFROMCAPTURE);
 }
 
+bool IsWindowTopMost(HWND hwnd) {
+    LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    return (exStyle & WS_EX_TOPMOST) != 0;
+}
+
 // Check if window is hidden from taskbar
 bool IsHiddenFromTaskbar(HWND hwnd) {
-    LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-    LONG style = GetWindowLong(hwnd, GWL_STYLE);
-    return (exStyle & WS_EX_TOOLWINDOW) != 0 || (style & WS_VISIBLE) == 0;
+    LONG_PTR ex = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    // WS_EX_TOOLWINDOW means “no taskbar button”; WS_EX_APPWINDOW forces one :contentReference[oaicite:5]{index=5}
+    bool tool = (ex & WS_EX_TOOLWINDOW) != 0;
+    bool appstyle = (ex & WS_EX_APPWINDOW) != 0;
+    // Hidden if it’s a tool window AND not forced onto taskbar :contentReference[oaicite:6]{index=6}
+    return tool && !appstyle;
 }
 
 // Check if window is hidden from Alt+Tab
 bool IsHiddenFromAltTab(HWND hwnd) {
-    LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-    return (exStyle & WS_EX_TOOLWINDOW) != 0 || (exStyle & WS_EX_NOACTIVATE) != 0;
+    LONG_PTR ex = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+    // A tool window never shows in Alt+Tab; WS_EX_NOACTIVATE also prevents activation but alone doesn’t hide :contentReference[oaicite:8]{index=8}
+    bool tool = (ex & WS_EX_TOOLWINDOW) != 0;
+    bool noact = (ex & WS_EX_NOACTIVATE) != 0;
+    bool appwin = (ex & WS_EX_APPWINDOW) != 0;
+    // Hidden if it’s a tool window, not an “app window,” regardless of NOACTIVATE :contentReference[oaicite:9]{index=9}
+    return tool && !appwin;
 }
 
 // Check if window has transparent/invisible regions
@@ -371,6 +387,7 @@ std::wstring CheckAllWindowsOfProcess() {
     DWORD processId = GetCurrentProcessId();
     bool cheatDetected = false;
     HWND mainAppWindow = NULL;
+    int totalCheatScore = 0;
 
     // First, get the process name
     HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processId);
@@ -390,6 +407,8 @@ std::wstring CheckAllWindowsOfProcess() {
     while ((hwnd = FindWindowEx(NULL, hwnd, NULL, NULL)) != NULL) {
         DWORD windowProcessId = 0;
         GetWindowThreadProcessId(hwnd, &windowProcessId);
+
+        int windowCheatScore = 0;
 
         if (windowProcessId == processId) {
             windowCount++;
@@ -422,16 +441,13 @@ std::wstring CheckAllWindowsOfProcess() {
             bool usingDirectComp = IsUsingDirectComposition(hwnd);
             bool clippedOrReduced = IsClippedOrReduced(hwnd);
 
-            // Check if any cheating methods are detected in this window
-            if (excludedFromCapture) {
-                cheatDetected = true;
-                topLevelWindows << L"  *** CHEAT DETECTED: Window excluded from capture ***\n";
-            }
-
-            if (!wcsstr(windowTitle, L"IME") && (hiddenFromTaskbar || hiddenFromAltTab)) {
-                cheatDetected = true;
-                topLevelWindows << L"  *** CHEAT DETECTED: Window hiding techniques detected ***\n";
-            }
+            // Assign score for each suspicious behavior
+            if (excludedFromCapture) windowCheatScore += 4; // High suspicion
+            if (hiddenFromTaskbar && !wcsstr(windowTitle, L"IME")) windowCheatScore += 2;
+            if (hiddenFromAltTab && !wcsstr(windowTitle, L"IME")) windowCheatScore += 1;
+            if (hasTransparentRegions && (hiddenFromTaskbar || excludedFromCapture)) windowCheatScore += 2; // Only suspicious in combination
+            if (usingDirectComp && (hiddenFromTaskbar || excludedFromCapture)) windowCheatScore += 2; // Only suspicious in combination
+            if (clippedOrReduced && (hiddenFromTaskbar || excludedFromCapture)) windowCheatScore += 1; // Only suspicious in combination
 
             // Log window attributes
             topLevelWindows << L"  - Excluded from capture: " << (excludedFromCapture ? L"YES" : L"NO") << L"\n";
@@ -447,6 +463,7 @@ std::wstring CheckAllWindowsOfProcess() {
 
             topLevelWindows << L"  - Window Style: 0x" << std::hex << style << std::dec << L"\n";
             topLevelWindows << L"  - Window Ex-Style: 0x" << std::hex << exStyle << std::dec << L"\n\n";
+            totalCheatScore += windowCheatScore;
         }
     }
 
@@ -462,26 +479,23 @@ std::wstring CheckAllWindowsOfProcess() {
     results << L"  - PrintScreen disabled: " << (disablesPrintScreen ? L"YES" : L"NO") << L"\n";
 
     if (hidesFromTaskMgr) {
-        cheatDetected = true;
+        totalCheatScore += 5;
         results << L"  *** CHEAT DETECTED: Process hiding from task manager ***\n";
     }
 
     if (disablesPrintScreen) {
-        cheatDetected = true;
+        totalCheatScore += 3;
         results << L"  *** CHEAT DETECTED: PrintScreen functionality disabled ***\n";
     }
 
     // Check for system-wide hooks
-    results << L"\nPossible keyboard/mouse hooks: ";
     HHOOK testHook = SetWindowsHookEx(WH_KEYBOARD_LL, NULL, NULL, 0);
     if (testHook == NULL) {
-        results << L"DETECTED (keyboard low-level hooks may be installed)\n";
-        cheatDetected = true;
-        results << L"  *** CHEAT DETECTED: System-wide keyboard hooks detected ***\n";
+        totalCheatScore += 3; // Moderately suspicious
+        results << L"  *** System-wide keyboard hooks detected ***\n";
     }
     else {
         UnhookWindowsHookEx(testHook);
-        results << L"None detected\n";
     }
 
     // Summary of potential cheating methods found
@@ -494,7 +508,7 @@ std::wstring CheckAllWindowsOfProcess() {
     }
 
     // If cheating methods are detected, lock the application
-    if (cheatDetected) {
+    if (totalCheatScore >= CHEATING_THRESHOLD) {
         results << L"\n!!! CHEATING DETECTED - APPLICATION WILL BE LOCKED !!!\n";
 
         // Lock the application if a main window was found

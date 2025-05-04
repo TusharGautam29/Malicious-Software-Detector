@@ -18,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 251,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Bookmark",
@@ -29,6 +29,10 @@
               "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
             },
             {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{6d4078d1-5951-4ed1-ac0e-0a8099c1cce5}"
+            },
+            {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "dll.cpp",
@@ -36,7 +40,7 @@
               "RelativeDocumentMoniker": "CaptureMonitorDLL\\dll.cpp",
               "ToolTip": "C:\\Users\\Hp\\source\\repos\\x\\CaptureMonitorDLL\\dll.cpp",
               "RelativeToolTip": "CaptureMonitorDLL\\dll.cpp",
-              "ViewState": "AgIAAB0BAAAAAAAAAAASwDMBAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAIwAAAAAAAAAAAAtwJ8AAAA8AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-04-25T19:37:48.268Z",
               "EditorCaption": ""
@@ -49,7 +53,7 @@
               "RelativeDocumentMoniker": "x\\injector.cpp",
               "ToolTip": "C:\\Users\\Hp\\source\\repos\\x\\x\\injector.cpp",
               "RelativeToolTip": "x\\injector.cpp",
-              "ViewState": "AgIAAAcAAAAAAAAAAAAiwFwAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAOkAAAAAAAAAAAAiwA4BAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-04-25T18:51:07.301Z",
               "EditorCaption": ""
