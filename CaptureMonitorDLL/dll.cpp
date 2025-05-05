@@ -381,15 +381,43 @@ void UnlockApplication() {
     LogToDebugger(L"Application unlocked\n");
 }
 
+HWND FindMainWindow(DWORD processId) {
+    HWND bestCandidate = NULL;
+    int bestScore = -1;
+
+    HWND hwnd = NULL;
+    while ((hwnd = FindWindowEx(NULL, hwnd, NULL, NULL)) != NULL) {
+        DWORD windowProcessId = 0;
+        GetWindowThreadProcessId(hwnd, &windowProcessId);
+
+        if (windowProcessId != processId) continue;
+
+        // Skip IME windows and tool windows
+        if (IsHiddenFromTaskbar(hwnd) || IsHiddenFromAltTab(hwnd)) continue;
+
+        // Calculate window score based on main window characteristics
+        int score = 0;
+        if (IsWindowVisible(hwnd)) score += 4;
+        if (GetParent(hwnd) == NULL) score += 2;
+        if (GetWindowTextLength(hwnd) > 0) score += 2;
+        if (!(GetWindowLong(hwnd, GWL_EXSTYLE) & WS_EX_TOOLWINDOW)) score += 3;
+        if (GetWindowLong(hwnd, GWL_STYLE) & WS_CAPTION) score += 1;
+
+        if (score > bestScore) {
+            bestCandidate = hwnd;
+            bestScore = score;
+        }
+    }
+    return bestCandidate;
+}
 // Check all windows of the process and lock if cheating detected
 std::wstring CheckAllWindowsOfProcess() {
     std::wstringstream results;
     DWORD processId = GetCurrentProcessId();
     bool cheatDetected = false;
-    HWND mainAppWindow = NULL;
     int totalCheatScore = 0;
 
-    // First, get the process name
+    // Get process name
     HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processId);
     wchar_t processName[MAX_PATH] = L"Unknown";
     if (hProcess) {
@@ -399,82 +427,63 @@ std::wstring CheckAllWindowsOfProcess() {
 
     results << L"Process: " << processName << L" (PID: " << processId << L")\n\n";
 
-    // Enumerate all top-level windows
-    int windowCount = 0;
-    std::wstringstream topLevelWindows;
+    // Find main application window using improved logic
+    HWND mainAppWindow = FindMainWindow(processId);
 
-    HWND hwnd = NULL;
-    while ((hwnd = FindWindowEx(NULL, hwnd, NULL, NULL)) != NULL) {
-        DWORD windowProcessId = 0;
-        GetWindowThreadProcessId(hwnd, &windowProcessId);
+    if (mainAppWindow) {
+        wchar_t windowTitle[256] = L"";
+        GetWindowTextW(mainAppWindow, windowTitle, 256);
+        wchar_t className[256] = L"";
+        GetClassName(mainAppWindow, className, 256);
 
-        int windowCheatScore = 0;
+        results << L"Main Window Analysis:\n";
+        results << L"----------------------\n";
+        results << L"Title: \"" << windowTitle << L"\"\n";
+        results << L"Class: " << className << L"\n";
 
-        if (windowProcessId == processId) {
-            windowCount++;
+        // Perform all checks only on the main window
+        bool excludedFromCapture = IsWindowExcludedFromCapture(mainAppWindow);
+        bool hiddenFromTaskbar = IsHiddenFromTaskbar(mainAppWindow);
+        bool hiddenFromAltTab = IsHiddenFromAltTab(mainAppWindow);
+        bool hasTransparentRegions = HasTransparentRegions(mainAppWindow);
+        bool usingDirectComp = IsUsingDirectComposition(mainAppWindow);
+        bool clippedOrReduced = IsClippedOrReduced(mainAppWindow);
 
-            wchar_t windowTitle[256] = L"";
-            GetWindowTextW(hwnd, windowTitle, 256);
+        // Log window attributes
+        results << L"\nWindow Attributes:\n";
+        results << L"  - Excluded from capture: " << (excludedFromCapture ? L"YES" : L"NO") << L"\n";
+        results << L"  - Hidden from taskbar: " << (hiddenFromTaskbar ? L"YES" : L"NO") << L"\n";
+        results << L"  - Hidden from Alt+Tab: " << (hiddenFromAltTab ? L"YES" : L"NO") << L"\n";
+        results << L"  - Has transparent regions: " << (hasTransparentRegions ? L"YES" : L"NO") << L"\n";
+        results << L"  - Using DirectComposition: " << (usingDirectComp ? L"YES" : L"NO") << L"\n";
+        results << L"  - Clipped or reduced size: " << (clippedOrReduced ? L"YES" : L"NO") << L"\n";
 
-            wchar_t className[256] = L"";
-            GetClassName(hwnd, className, 256);
+        // Get window styles
+        LONG style = GetWindowLong(mainAppWindow, GWL_STYLE);
+        LONG exStyle = GetWindowLong(mainAppWindow, GWL_EXSTYLE);
+        results << L"\nWindow Styles:\n";
+        results << L"  - Style: 0x" << std::hex << style << std::dec << L"\n";
+        results << L"  - Extended Style: 0x" << std::hex << exStyle << std::dec << L"\n\n";
 
-            // Skip IME windows - they are legitimate Windows components
-            if (wcsstr(windowTitle, L"IME") != NULL || wcsstr(className, L"IME") != NULL) {
-                topLevelWindows << L"Window " << windowCount << L": \"" << windowTitle << L"\" (Class: " << className << L") - IME Window (skipping)\n\n";
-                continue;
-            }
-
-            // Remember the first non-IME window as the main app window
-            if (mainAppWindow == NULL && wcslen(windowTitle) > 0) {
-                mainAppWindow = hwnd;
-            }
-
-            // Log window details
-            topLevelWindows << L"Window " << windowCount << L": \"" << windowTitle << L"\" (Class: " << className << L")\n";
-
-            // Check for all possible cheating techniques
-            bool excludedFromCapture = IsWindowExcludedFromCapture(hwnd);
-            bool hiddenFromTaskbar = IsHiddenFromTaskbar(hwnd);
-            bool hiddenFromAltTab = IsHiddenFromAltTab(hwnd);
-            bool hasTransparentRegions = HasTransparentRegions(hwnd);
-            bool usingDirectComp = IsUsingDirectComposition(hwnd);
-            bool clippedOrReduced = IsClippedOrReduced(hwnd);
-
-            // Assign score for each suspicious behavior
-            if (excludedFromCapture) windowCheatScore += 4; // High suspicion
-            if (hiddenFromTaskbar && !wcsstr(windowTitle, L"IME")) windowCheatScore += 2;
-            if (hiddenFromAltTab && !wcsstr(windowTitle, L"IME")) windowCheatScore += 1;
-            if (hasTransparentRegions && (hiddenFromTaskbar || excludedFromCapture)) windowCheatScore += 2; // Only suspicious in combination
-            if (usingDirectComp && (hiddenFromTaskbar || excludedFromCapture)) windowCheatScore += 2; // Only suspicious in combination
-            if (clippedOrReduced && (hiddenFromTaskbar || excludedFromCapture)) windowCheatScore += 1; // Only suspicious in combination
-
-            // Log window attributes
-            topLevelWindows << L"  - Excluded from capture: " << (excludedFromCapture ? L"YES" : L"NO") << L"\n";
-            topLevelWindows << L"  - Hidden from taskbar: " << (hiddenFromTaskbar ? L"YES" : L"NO") << L"\n";
-            topLevelWindows << L"  - Hidden from Alt+Tab: " << (hiddenFromAltTab ? L"YES" : L"NO") << L"\n";
-            topLevelWindows << L"  - Has transparent regions: " << (hasTransparentRegions ? L"YES" : L"NO") << L"\n";
-            topLevelWindows << L"  - Using DirectComposition: " << (usingDirectComp ? L"YES" : L"NO") << L"\n";
-            topLevelWindows << L"  - Clipped or reduced size: " << (clippedOrReduced ? L"YES" : L"NO") << L"\n";
-
-            // Get window styles for debugging
-            LONG style = GetWindowLong(hwnd, GWL_STYLE);
-            LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-
-            topLevelWindows << L"  - Window Style: 0x" << std::hex << style << std::dec << L"\n";
-            topLevelWindows << L"  - Window Ex-Style: 0x" << std::hex << exStyle << std::dec << L"\n\n";
-            totalCheatScore += windowCheatScore;
-        }
+        // Scoring logic for main window
+        if (excludedFromCapture) totalCheatScore += 4;
+        if (hiddenFromTaskbar) totalCheatScore += 2;
+        if (hiddenFromAltTab) totalCheatScore += 1;
+        if (hasTransparentRegions && (hiddenFromTaskbar || excludedFromCapture)) totalCheatScore += 2;
+        if (usingDirectComp && (hiddenFromTaskbar || excludedFromCapture)) totalCheatScore += 2;
+        if (clippedOrReduced && (hiddenFromTaskbar || excludedFromCapture)) totalCheatScore += 1;
+    }
+    else {
+        results << L"\nNo main window found (highly suspicious)\n";
+        totalCheatScore += 5;
     }
 
-    results << L"Found " << windowCount << L" windows belonging to the process\n\n";
-    results << topLevelWindows.str();
-
-    // Add process-level checks
+    // Process-level checks
+    results << L"\nProcess-Level Checks:\n";
+    results << L"---------------------\n";
     bool hidesFromTaskMgr = IsHidingFromTaskManager(processId);
-    bool disablesPrintScreen = DisablesPrintScreen(NULL);
+    bool disablesPrintScreen = DisablesPrintScreen(mainAppWindow);
 
-    results << L"\nProcess-level checks:\n";
     results << L"  - Hiding from task manager: " << (hidesFromTaskMgr ? L"YES" : L"NO") << L"\n";
     results << L"  - PrintScreen disabled: " << (disablesPrintScreen ? L"YES" : L"NO") << L"\n";
 
@@ -482,7 +491,6 @@ std::wstring CheckAllWindowsOfProcess() {
         totalCheatScore += 5;
         results << L"  *** CHEAT DETECTED: Process hiding from task manager ***\n";
     }
-
     if (disablesPrintScreen) {
         totalCheatScore += 3;
         results << L"  *** CHEAT DETECTED: PrintScreen functionality disabled ***\n";
@@ -491,27 +499,20 @@ std::wstring CheckAllWindowsOfProcess() {
     // Check for system-wide hooks
     HHOOK testHook = SetWindowsHookEx(WH_KEYBOARD_LL, NULL, NULL, 0);
     if (testHook == NULL) {
-        totalCheatScore += 3; // Moderately suspicious
+        totalCheatScore += 3;
         results << L"  *** System-wide keyboard hooks detected ***\n";
     }
     else {
         UnhookWindowsHookEx(testHook);
     }
 
-    // Summary of potential cheating methods found
-    results << L"\nSUMMARY OF POTENTIAL ISSUES:\n";
-    results << L"-----------------------------\n";
+    // Final assessment
+    results << L"\nFinal Assessment:\n";
+    results << L"-----------------\n";
+    results << L"Total suspicion score: " << totalCheatScore << L"/" << CHEATING_THRESHOLD << L"\n";
 
-    if (windowCount == 0) {
-        results << L"- Process has no visible windows (highly suspicious)\n";
-        cheatDetected = true;
-    }
-
-    // If cheating methods are detected, lock the application
     if (totalCheatScore >= CHEATING_THRESHOLD) {
         results << L"\n!!! CHEATING DETECTED - APPLICATION WILL BE LOCKED !!!\n";
-
-        // Lock the application if a main window was found
         if (mainAppWindow != NULL) {
             if (LockApplication(mainAppWindow)) {
                 results << L"Application successfully locked.\n";

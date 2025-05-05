@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\Hp\\source\\repos\\x\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{CCAE1415-3E67-4B67-B609-052F111460F4}|CaptureMonitorDLL\\CaptureMonitorDLL.vcxproj|C:\\Users\\Hp\\source\\repos\\x\\CaptureMonitorDLL\\dll.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{CCAE1415-3E67-4B67-B609-052F111460F4}|CaptureMonitorDLL\\CaptureMonitorDLL.vcxproj|solutionrelative:CaptureMonitorDLL\\dll.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{5440BEE4-3263-409E-8949-D237B6B3D502}|x\\x.vcxproj|C:\\Users\\Hp\\source\\repos\\x\\x\\injector.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{5440BEE4-3263-409E-8949-D237B6B3D502}|x\\x.vcxproj|solutionrelative:x\\injector.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CCAE1415-3E67-4B67-B609-052F111460F4}|CaptureMonitorDLL\\CaptureMonitorDLL.vcxproj|C:\\Users\\Hp\\source\\repos\\x\\CaptureMonitorDLL\\dll.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{CCAE1415-3E67-4B67-B609-052F111460F4}|CaptureMonitorDLL\\CaptureMonitorDLL.vcxproj|solutionrelative:CaptureMonitorDLL\\dll.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 251,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -34,26 +34,25 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "dll.cpp",
               "DocumentMoniker": "C:\\Users\\Hp\\source\\repos\\x\\CaptureMonitorDLL\\dll.cpp",
               "RelativeDocumentMoniker": "CaptureMonitorDLL\\dll.cpp",
               "ToolTip": "C:\\Users\\Hp\\source\\repos\\x\\CaptureMonitorDLL\\dll.cpp",
               "RelativeToolTip": "CaptureMonitorDLL\\dll.cpp",
-              "ViewState": "AgIAAIwAAAAAAAAAAAAtwJ8AAAA8AAAAAAAAAA==",
+              "ViewState": "AgIAABECAAAAAAAAAAAAACwCAABQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-04-25T19:37:48.268Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-04-25T19:37:48.268Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "injector.cpp",
               "DocumentMoniker": "C:\\Users\\Hp\\source\\repos\\x\\x\\injector.cpp",
               "RelativeDocumentMoniker": "x\\injector.cpp",
               "ToolTip": "C:\\Users\\Hp\\source\\repos\\x\\x\\injector.cpp",
               "RelativeToolTip": "x\\injector.cpp",
-              "ViewState": "AgIAAOkAAAAAAAAAAAAiwA4BAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAsBAAAAAAAAAAAuwEMBAAAXAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-04-25T18:51:07.301Z",
               "EditorCaption": ""
